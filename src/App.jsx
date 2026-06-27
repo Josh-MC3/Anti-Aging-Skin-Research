@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 // ============================================================
 // DESIGN TOKENS
 // ============================================================
-const colors = {
+const lightColors = {
   bg: '#FAFAF8',
   bgAlt: '#F1EFE9',
   ink: '#1C2230',
@@ -17,8 +17,47 @@ const colors = {
   safetyGood: '#4C7A5E',
   safetyCaution: '#A8762F',
   safetySig: '#A14B3D',
+  signalBg: '#FBF0ED',
+  invertBg: '#1C2230',     // stays dark in both themes — for intentionally inverted panels
+  invertText: '#FAFAF8',   // stays light in both themes
+  invertLabel: '#A8B5C4',
+  invertLabelWarm: '#E8A896',
   white: '#FFFFFF',
 };
+
+const darkColors = {
+  bg: '#15191F',
+  bgAlt: '#1D2229',
+  ink: '#EDEAE2',
+  inkSoft: '#A7AEBC',
+  line: '#333A45',
+  accent: '#6FA8A0',       // lighter teal — keeps enough contrast on dark bg
+  accentSoft: '#22302E',
+  tier: '#E8965E',         // brighter coral-amber for dark-bg legibility
+  tierSoft: '#3A2C22',
+  star: '#D4B16A',         // brighter gold for dark-bg legibility
+  safetyGood: '#6FA382',
+  safetyCaution: '#C99A52',
+  safetySig: '#D17C6C',
+  signalBg: '#3A2426',
+  invertBg: '#0E1116',    // even darker than the dark-mode bg, for contrast against it
+  invertText: '#FAFAF8',
+  invertLabel: '#A8B5C4',
+  invertLabelWarm: '#E8A896',
+  white: '#1D2229',         // "white" surfaces (cards) flip to a dark panel color
+};
+
+// `colors` is intentionally a mutable object whose VALUES get swapped on
+// theme toggle, rather than a new object reference — every component below
+// reads colors.xxx directly, so mutating in place + forcing a re-render
+// (via ThemeProvider's key/state) updates the whole site without touching
+// any individual page component.
+const colors = { ...lightColors };
+
+function applyTheme(mode) {
+  const source = mode === 'dark' ? darkColors : lightColors;
+  Object.keys(source).forEach(k => { colors[k] = source[k]; });
+}
 
 const fontDisplay = "'Source Serif 4', 'Iowan Old Style', Georgia, serif";
 const fontBody = "'Inter', -apple-system, sans-serif";
@@ -117,10 +156,10 @@ function MythFact({ myth, fact }) {
 function ClinicalBottomLine({ children }) {
   return (
     <div style={{
-      background: colors.ink, color: colors.bg, padding: '22px 26px', margin: '28px 0',
+      background: colors.invertBg, color: colors.invertText, padding: '22px 26px', margin: '28px 0',
       borderRadius: 10,
     }}>
-      <div style={{ fontFamily: fontMono, fontSize: 11, letterSpacing: '0.08em', color: '#A8B5C4', marginBottom: 10, textTransform: 'uppercase' }}>Clinical Bottom Line</div>
+      <div style={{ fontFamily: fontMono, fontSize: 11, letterSpacing: '0.08em', color: colors.invertLabel, marginBottom: 10, textTransform: 'uppercase' }}>Clinical Bottom Line</div>
       <div style={{ fontSize: 15.5, lineHeight: 1.65, fontFamily: fontDisplay }}>{children}</div>
     </div>
   );
@@ -135,7 +174,7 @@ function ClinicalBottomLine({ children }) {
 function MedicalSignal({ title, children }) {
   return (
     <div style={{
-      background: '#FBF0ED', border: `1.5px solid ${colors.safetySig}`, borderRadius: 10,
+      background: colors.signalBg, border: `1.5px solid ${colors.safetySig}`, borderRadius: 10,
       padding: '18px 22px', margin: '22px 0', display: 'flex', gap: 14,
     }}>
       <div style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>⚕</div>
@@ -398,20 +437,69 @@ function ComingSoon({ title }) {
   );
 }
 
+// ============================================================
+// THEME TOGGLE — sun/moon switch
+// ============================================================
+function ThemeToggle({ theme, onToggle }) {
+  const isDark = theme === 'dark';
+  return (
+    <button
+      onClick={onToggle}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      style={{
+        flexShrink: 0, width: 34, height: 34, borderRadius: '50%',
+        border: `1px solid ${colors.line}`, background: colors.bgAlt,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', fontSize: 15, lineHeight: 1, padding: 0,
+        color: colors.ink, transition: 'background 0.15s',
+      }}
+    >
+      {isDark ? '☀' : '☾'}
+    </button>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState('home');
+
+  // Theme: default to saved preference, then OS preference, then light.
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem('theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch (e) { /* localStorage unavailable — fall through */ }
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  // Apply the chosen palette into the shared `colors` object (in place)
+  // before every render, so every component's colors.xxx reads pick it up.
+  applyTheme(theme);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('theme', theme); } catch (e) { /* ignore */ }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => (t === 'light' ? 'dark' : 'light'));
+
   const grouped = pages.reduce((acc, p) => {
     (acc[p.group] = acc[p.group] || []).push(p);
     return acc;
   }, {});
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg, fontFamily: fontBody }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: colors.bg, fontFamily: fontBody, transition: 'background 0.2s' }}>
       {/* SIDEBAR */}
-      <div style={{ width: 260, borderRight: `1px solid ${colors.line}`, padding: '28px 0', flexShrink: 0, background: colors.white }}>
-        <div style={{ padding: '0 24px 24px 24px', borderBottom: `1px solid ${colors.line}`, marginBottom: 16 }}>
-          <div style={{ fontFamily: fontDisplay, fontSize: 17, fontWeight: 700, color: colors.ink, lineHeight: 1.3 }}>Evidence-Based<br/>Skin & Aging</div>
-          <div style={{ fontFamily: fontMono, fontSize: 10.5, color: colors.inkSoft, marginTop: 6, letterSpacing: '0.03em' }}>A REFERENCE, NOT MARKETING</div>
+      <div style={{ width: 260, borderRight: `1px solid ${colors.line}`, padding: '28px 0', flexShrink: 0, background: colors.white, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '0 24px 24px 24px', borderBottom: `1px solid ${colors.line}`, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          <div>
+            <div style={{ fontFamily: fontDisplay, fontSize: 17, fontWeight: 700, color: colors.ink, lineHeight: 1.3 }}>Evidence-Based<br/>Skin & Aging</div>
+            <div style={{ fontFamily: fontMono, fontSize: 10.5, color: colors.inkSoft, marginTop: 6, letterSpacing: '0.03em' }}>A REFERENCE, NOT MARKETING</div>
+          </div>
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
         {Object.entries(grouped).map(([group, items]) => (
           <div key={group} style={{ marginBottom: 18 }}>
@@ -1871,13 +1959,13 @@ function DeviceTherapyPage() {
 function ElevatedDisclaimer() {
   return (
     <div style={{
-      background: colors.ink, color: colors.bg, borderRadius: 10,
+      background: colors.invertBg, color: colors.invertText, borderRadius: 10,
       padding: '20px 24px', margin: '0 0 28px 0', display: 'flex', gap: 16,
       border: `2px solid ${colors.safetySig}`,
     }}>
       <div style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>⚕</div>
       <div>
-        <div style={{ fontFamily: fontMono, fontSize: 11, color: '#E8A896', fontWeight: 700, letterSpacing: '0.06em', marginBottom: 8, textTransform: 'uppercase' }}>Medical Disclaimer — Elevated</div>
+        <div style={{ fontFamily: fontMono, fontSize: 11, color: colors.invertLabelWarm, fontWeight: 700, letterSpacing: '0.06em', marginBottom: 8, textTransform: 'uppercase' }}>Medical Disclaimer — Elevated</div>
         <div style={{ fontSize: 14.5, lineHeight: 1.65 }}>
           This page discusses procedures that involve injectables, devices, or surgery performed by licensed medical professionals. Nothing here substitutes for an in-person consultation. Decisions about these procedures — including candidacy, technique, and product selection — should be made directly with a licensed provider who can examine you, take a full medical history, and discuss your specific risks. This page provides background for that conversation, not a substitute for it.
         </div>
