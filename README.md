@@ -2,7 +2,7 @@
 
 A reference, not marketing. Sixteen pages on skin aging, skincare ingredients, devices, cosmetic procedures, and longevity — every recommendation rated by independent clinical evidence quality, not popularity, price, or marketing presence.
 
-**[→ Live site](https://YOUR-USERNAME.github.io/evidence-based-skin-aging/)** *(update this link after your first deploy — see [Deployment](#deployment) below)*
+**[→ Live site](https://josh-mc3.github.io/Anti-Aging-Skin-Research/)**
 
 ---
 
@@ -64,15 +64,14 @@ This repo is pre-configured to deploy to **GitHub Pages** automatically via GitH
 
 ### One-time setup
 
-1. Push this repo to GitHub.
+1. Push this repo to GitHub (repo: `Anti-Aging-Skin-Research`).
 2. In your repo, go to **Settings → Pages**, and under "Build and deployment," set **Source** to **GitHub Actions**.
-3. Open `vite.config.js` and confirm the `base` path matches your actual repo name:
+3. The `base` path in `vite.config.js` is already set correctly for this repo:
    ```js
-   base: '/your-repo-name/',
+   base: '/Anti-Aging-Skin-Research/',
    ```
-   (If you're deploying to a custom domain or a user/org root page instead of a project page, set `base: '/'` instead.)
 4. Push to `main` — the included workflow (`.github/workflows/deploy.yml`) will build and deploy automatically. Check the **Actions** tab for progress.
-5. Your site will be live at `https://<your-username>.github.io/<your-repo-name>/`.
+5. Your site will be live at `https://josh-mc3.github.io/Anti-Aging-Skin-Research/`.
 
 ### Manual deploy (alternative)
 
@@ -87,7 +86,7 @@ This uses the `gh-pages` package (already in `devDependencies`) to build and pus
 
 ### Deploying elsewhere (Vercel, Netlify, Cloudflare Pages)
 
-This is a standard Vite app — any static host will work. Build command: `npm run build`. Output directory: `dist`. If deploying to a platform that serves from the domain root (most of them), change `base: '/evidence-based-skin-aging/'` to `base: '/'` in `vite.config.js` first.
+This is a standard Vite app — any static host will work. Build command: `npm run build`. Output directory: `dist`. If deploying to a platform that serves from the domain root (most of them), change `base: '/Anti-Aging-Skin-Research/'` to `base: '/'` in `vite.config.js` first.
 
 ## Content maintenance
 
